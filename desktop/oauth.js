@@ -5,8 +5,13 @@ const CLIENT_ID = 'vikunja-desktop'
 const REDIRECT_URI = 'vikunja-desktop://callback'
 
 let pendingCodeVerifier = null
+let pendingState = null
 
 function generateCodeVerifier() {
+	return crypto.randomBytes(32).toString('base64url')
+}
+
+function generateState() {
 	return crypto.randomBytes(32).toString('base64url')
 }
 
@@ -14,7 +19,7 @@ function generateCodeChallenge(verifier) {
 	return crypto.createHash('sha256').update(verifier).digest('base64url')
 }
 
-function buildAuthorizationUrl(frontendUrl, codeChallenge) {
+function buildAuthorizationUrl(frontendUrl, codeChallenge, state) {
 	// Strip trailing slash and /api/v1 suffix to get the frontend origin
 	let base = frontendUrl.replace(/\/+$/, '').replace(/\/api\/v1$/, '')
 
@@ -25,6 +30,7 @@ function buildAuthorizationUrl(frontendUrl, codeChallenge) {
 	url.searchParams.set('redirect_uri', REDIRECT_URI)
 	url.searchParams.set('code_challenge', codeChallenge)
 	url.searchParams.set('code_challenge_method', 'S256')
+	url.searchParams.set('state', state)
 
 	return url.toString()
 }
@@ -32,9 +38,11 @@ function buildAuthorizationUrl(frontendUrl, codeChallenge) {
 function startLogin(apiUrl) {
 	const verifier = generateCodeVerifier()
 	const challenge = generateCodeChallenge(verifier)
+	const state = generateState()
 	pendingCodeVerifier = verifier
+	pendingState = state
 
-	return buildAuthorizationUrl(apiUrl, challenge)
+	return buildAuthorizationUrl(apiUrl, challenge, state)
 }
 
 function postJSON(url, body) {
@@ -82,12 +90,23 @@ function getTokenEndpoint(apiUrl) {
 	return `${base}/oauth/token`
 }
 
-async function exchangeCodeForTokens(apiUrl, code) {
+async function exchangeCodeForTokens(apiUrl, code, state) {
 	const verifier = pendingCodeVerifier
+	const expectedState = pendingState
 	pendingCodeVerifier = null
+	pendingState = null
 
 	if (!verifier) {
 		throw new Error('No pending PKCE verifier found')
+	}
+
+	// The vikunja-desktop:// protocol can be triggered by any application or web
+	// page, so a callback could carry an authorization code we never requested.
+	// Rejecting a mismatched (or missing) state blocks that login-CSRF / code
+	// injection vector. The value round-trips through the frontend's
+	// /oauth/authorize handler unchanged.
+	if (!state || state !== expectedState) {
+		throw new Error('OAuth state mismatch')
 	}
 
 	const tokenUrl = getTokenEndpoint(apiUrl)
