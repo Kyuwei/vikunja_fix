@@ -47,6 +47,22 @@ function safeOpenExternal(url) {
 	}
 }
 
+// Keep in-window navigation confined to the local frontend server. Any other
+// origin (or an unparseable URL) is blocked so a compromised page can't drive
+// the window to an attacker-controlled site.
+function restrictNavigation(event, navigationUrl) {
+	let origin
+	try {
+		origin = new URL(navigationUrl).origin
+	} catch {
+		event.preventDefault()
+		return
+	}
+	if (origin !== `http://127.0.0.1:${serverPort}`) {
+		event.preventDefault()
+	}
+}
+
 // Module-scope state
 let mainWindow = null
 let quickEntryWindow = null
@@ -123,6 +139,7 @@ function handleDeepLink(url) {
 		const parsed = new URL(url)
 		if (parsed.hostname === 'callback') {
 			const code = parsed.searchParams.get('code')
+			const state = parsed.searchParams.get('state')
 			if (code && mainWindow) {
 				// Store the apiUrl that was used to start login so we can
 				// exchange the code at the correct endpoint
@@ -132,7 +149,7 @@ function handleDeepLink(url) {
 					return
 				}
 
-				oauth.exchangeCodeForTokens(apiUrl, code)
+				oauth.exchangeCodeForTokens(apiUrl, code, state)
 					.then(tokens => {
 						mainWindow.webContents.send('oauth:tokens', tokens)
 					})
@@ -259,13 +276,7 @@ function createMainWindow() {
 
 	// Prevent same-window navigation to external origins.
 	// Only allow navigation to the local express server on the exact port.
-	mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
-		const parsedUrl = new URL(navigationUrl)
-		if (parsedUrl.origin === `http://127.0.0.1:${serverPort}`) {
-			return
-		}
-		event.preventDefault()
-	})
+	mainWindow.webContents.on('will-navigate', restrictNavigation)
 
 	mainWindow.setMenuBarVisibility(false)
 
@@ -336,13 +347,7 @@ function createQuickEntryWindow() {
 		return {action: 'deny'}
 	})
 
-	quickEntryWindow.webContents.on('will-navigate', (event, navigationUrl) => {
-		const parsedUrl = new URL(navigationUrl)
-		if (parsedUrl.origin === `http://127.0.0.1:${serverPort}`) {
-			return
-		}
-		event.preventDefault()
-	})
+	quickEntryWindow.webContents.on('will-navigate', restrictNavigation)
 
 	quickEntryWindow.loadURL(`http://127.0.0.1:${serverPort}/?mode=quick-add`)
 
