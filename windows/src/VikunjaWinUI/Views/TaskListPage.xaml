@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="VikunjaWinUI.Views.TaskListPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:VikunjaWinUI.Models"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Padding="20,12,20,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <TextBlock Text="Tasks" Style="{ThemeResource TitleTextBlockStyle}" />
+                <TextBlock Text="{x:Bind ViewModel.ServerLabel}"
+                           VerticalAlignment="Bottom"
+                           Margin="0,0,0,4"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Style="{ThemeResource CaptionTextBlockStyle}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <ToggleSwitch
+                    OffContent="Open"
+                    OnContent="All"
+                    IsOn="{x:Bind ViewModel.IncludeDone, Mode=TwoWay}"
+                    VerticalAlignment="Center" />
+                <Button Command="{x:Bind ViewModel.RefreshCommand}" ToolTipService.ToolTip="Refresh">
+                    <FontIcon Glyph="&#xE72C;" FontSize="16" />
+                </Button>
+                <Button Command="{x:Bind ViewModel.SignOutCommand}" ToolTipService.ToolTip="Sign out">
+                    <FontIcon Glyph="&#xE7E8;" FontSize="16" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <InfoBar
+            Grid.Row="1"
+            Margin="0,0,0,8"
+            IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+            Severity="Error"
+            Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" />
+
+        <!-- Task list -->
+        <Grid Grid.Row="2">
+            <ListView
+                ItemsSource="{x:Bind ViewModel.Tasks}"
+                SelectionMode="None"
+                ShowsScrollingPlaceholders="True">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:TaskItem">
+                        <Grid Padding="4,10" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <CheckBox
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsChecked="{x:Bind Done, Mode=TwoWay}"
+                                Click="OnTaskDoneClick"
+                                VerticalAlignment="Center" />
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock
+                                        Text="{x:Bind Identifier}"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}" />
+                                    <TextBlock
+                                        Text="{x:Bind DueDateDisplay}"
+                                        Visibility="{x:Bind HasDueDate, Converter={StaticResource BoolToVisibility}}"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Border
+                                Grid.Column="2"
+                                Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}}"
+                                Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                                CornerRadius="4"
+                                Padding="8,2"
+                                VerticalAlignment="Center">
+                                <TextBlock
+                                    Text="{x:Bind PriorityLabel}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}" />
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <TextBlock
+                Text="Nothing here. Enjoy the empty inbox."
+                Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+            <ProgressRing
+                IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
+                Width="36" Height="36"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center" />
+        </Grid>
+    </Grid>
+</Page>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="VikunjaWinUI.Views.LoginPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Padding="24">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center">
+            <StackPanel Width="360" Spacing="16">
+
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE73E;" FontSize="28" />
+                    <TextBlock Text="Sign in to Vikunja"
+                               Style="{ThemeResource TitleTextBlockStyle}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <InfoBar
+                    IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                    Severity="Error"
+                    IsClosable="False"
+                    Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" />
+
+                <TextBox
+                    Header="Server URL"
+                    PlaceholderText="https://try.vikunja.io"
+                    Text="{x:Bind ViewModel.ServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBox
+                    Header="Username"
+                    Text="{x:Bind ViewModel.Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                <PasswordBox
+                    x:Name="PasswordInput"
+                    Header="Password"
+                    PasswordChanged="OnPasswordChanged" />
+
+                <TextBox
+                    Header="Two-factor code (if enabled)"
+                    Text="{x:Bind ViewModel.TotpPasscode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                <CheckBox
+                    Content="Keep me signed in"
+                    IsChecked="{x:Bind ViewModel.RememberMe, Mode=TwoWay}" />
+
+                <Button
+                    Content="Sign in"
+                    Style="{ThemeResource AccentButtonStyle}"
+                    HorizontalAlignment="Stretch"
+                    Command="{x:Bind ViewModel.LoginCommand}" />
+
+                <ProgressRing
+                    IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
+                    HorizontalAlignment="Center" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
